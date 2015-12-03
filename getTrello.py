@@ -1,5 +1,9 @@
 #! /usr/bin/env python
-from trello import TrelloApi # https://pypi.python.org/pypi/trello
+
+## https://pypi.python.org/pypi/trello
+## See also https://pythonhosted.org/trello/trello.html
+from trello import TrelloApi
+
 from requests.exceptions import HTTPError
 import sys, os
 
