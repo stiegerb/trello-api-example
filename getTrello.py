@@ -12,18 +12,18 @@ assert(os.path.exists('TOKEN'))
 
 ## To get an app key, go here:
 ## https://trello.com/app-key
-APPKEY = open('APPKEY').readlines()[0].strip() #'b7c87d9c9fa46d2cfd6ffe83708ab231'
+APPKEY = open('APPKEY').readlines()[0].strip()
 trello = TrelloApi(APPKEY)
 
 ## To get a new token, call this:
-## trello.get_token_url('b7c87d9c9fa46d2cfd6ffe83708ab231', write_access=False)
+## trello.get_token_url(APPKEY, write_access=False)
 ## and put the resulting URL in a browser
-TOKEN = open('TOKEN').readlines()[0].strip() # '546a304d04c4964f66ce556ac904406b7f5169a76d132c06b16a1303db1a5565'
+TOKEN = open('TOKEN').readlines()[0].strip()
 
 trello.set_token(TOKEN)
 
 try:
-	BOARDID = sys.argv[1] ## top mass board: https://trello.com/b/qARjRq3f
+	BOARDID = sys.argv[1]
 except IndexError:
 	print "ERROR: Please provide a board id in the command line"
 	sys.exit(-1)
