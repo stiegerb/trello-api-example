@@ -30,6 +30,7 @@ except IndexError:
 
 try:
 	cards = trello.boards.get_card(BOARDID)
+	lists = trello.boards.get_list(BOARDID)
 except HTTPError, e:
 	message = 'Unknown HTTPError'
 	if e.message.startswith('400'):
@@ -48,7 +49,7 @@ def getCADILine(line):
 		return None
 
 def getParticipants(line):
-	return re.findall(r'^[\*]{2}([\w\s/?]*)[\*]{2} \([\*]{1}([\w\s,?]*)[\*]{1}\)', line, re.M)
+	return re.findall(r'^[\*]{2}([^*]*)[\*]{2} \([\*]{1}([^*]*)[\*]{1}\)', line, re.M)
 
 def getAnalysisNotes(line):
 	return list(set(re.findall(r'(AN-20[\d]{2}/[\d]{1,3})', line)))
@@ -63,33 +64,55 @@ def getHeadline(line):
 	except AttributeError:
 		return None
 
+# Get the names of lists
+listnames = {}
+for l in lists:
+	listnames[l['id']] = l['name']
+
 ## Loop on the cards and list their descriptions
 analyses = {}
-print 50*'#'
 for card in cards:
 	# Skip cards with label 'Organization'
 	if len([l for l in card['labels'] if 'Organization' in l['name']]): continue
 
-	analyses[card['idShort']] = (getCADILine(card['name']), card['desc'])
+	analyses[card['idShort']] = (getCADILine(card['name']), card['desc'], listnames[card['idList']])
 
-for cadi, desc in sorted(analyses.values()):
-	print cadi,
-	print ' | ',
+
+# outtable = '| *CADI Line* | *Status* | *Title* | *Groups* | *People* | *Analysis Notes* | *Presentations* |\n'
+outtable = '| *CADI Line* | *Status* | *Title* | *Groups* | *Analysis Notes* | *Presentations* |\n'
+for cadi, desc, stat in sorted(analyses.values()):
+	if 'Done' in stat: continue
+
+	outtable += '| '
+	outtable += '%s | ' % cadi
+
+	outtable += '%s | ' % stat
 
 	headl, parts, notes, press = [x(desc) for x in [getHeadline,
 	                                                getParticipants,
 	                                                getAnalysisNotes,
 	                                                getPresentations]]
 
-	print '%-60s' % headl,
-	print ' | ',
+	outtable += '%s | ' % headl
 
 	institutes = [i for i,_ in parts]
-	print '%-30s' % ', '.join(institutes),
-	print ' | ',
+	outtable += '%s | ' % ', '.join(institutes)
+
 	# people = [p for _,p in parts]
-	# print '%-120s' % ', '.join(people),
-	# print ' | ',
-	print '%-30s' % ', '.join(notes),
-	print ' | '
+	# outtable += '%s | ' % ', '.join(people)
+
+	outtable += '%s | ' % ', '.join(notes)
+
+	outtable += '%s | ' % ', '.join(press)
+	outtable += '\n'
+outtable += '\n'
+
+## Add links:
+outtable = re.sub(r'(TOP-XX-XXX)', 'Not yet', outtable)
+outtable = re.sub(r'(TOP-[0-9X]{2}-[0-9X]{3})', '[[http://cms.cern.ch/iCMS/analysisadmin/cadilines?line=\\1][\\1]]', outtable)
+outtable = re.sub(r'(AN-20[\d]{2}/[\d]{1,3})',  '[[http://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20\\1][\\1]]', outtable)
+outtable = re.sub(r'(\d{6})',                   '[[https://indico.cern.ch/event/\\1][\\1]]', outtable)
+
+with open('twikitable.txt', 'w') as ofile:
+	ofile.write(outtable)
 
